@@ -1,0 +1,87 @@
+@startuml
+package "cce" {
+    abstract class Executor {
+        + ExecutionResult run(Cfg)
+        # std::vector<ExecutionContext> setupInitialStateset()
+        # void handleCycleEnd(ExecutionContext)
+        # void handleReturnCall(ExecutionContext)
+        # void applyVertexToContext(ExecutionContext)
+        {abstract} # void executeInstruction(ExecutionContext, Instruction)
+        # std::pair<InitialValuesType, CurrentValuesType> generateConcreteValuation()
+
+    }
+
+    class ConcolicExecutor extends Executor {
+        # void executeInstruction(ExecutionContext, Instruction)
+    }
+
+    class SmartExecutor extends ConcolicExecutor {
+        # void applyVertexToContext(ExecutionContext)
+    }
+    class ShadowSymbolicExecutor extends SmartExecutor {
+        # std::vector<ExecutionContext> setupInitialStateset()
+    }
+
+    abstract class ExplorationStrategy {
+       {abstract} + shouldTerminate() : bool
+       {abstract} + add(ExecutionContext)
+       {abstract} + front() : ExecutionContext
+       {abstract} + void popFront() : ExecutionContext
+    }
+
+    class CycleDFSExplorationStrategy extends ExplorationStrategy {
+        - std::list<ExecutionContext> _stateSet
+    }
+
+    class TestCaseCollector {
+        void add(TestCase)
+        std::vector<TestCase> getAll()
+    }
+
+    class TestCase {
+        + InitialValuesType initial
+        + CurrentValuesType output
+        + bool isError
+    }
+
+    class ExecutionContext {
+        - z3.expr _pathConditions
+        - InitialValuesType _initialConcreteValues
+        - CurrentValuesType _currentConcreteValues
+
+        + void add(z3::expr)
+    }
+
+    ExecutionContext .. Executor
+    ExplorationStrategy <-- Executor
+    ConcolicExecutor --> InstructionEvaluator
+    ConcolicExecutor --> InstructionEncoder
+    InstructionEvaluator --> ExpressionEvaluator
+    InstructionEncoder --> ExpressionEncoder
+    Executor --> TestCaseCollector
+
+    SmartExecutor --> AbstractSummariser
+    SmartExecutor "1" *-- "0..*" Summary
+    TestCaseCollector "1" *-- "0..*" TestCase
+
+    class Summary {
+        - z3::expr precondition
+        - std::map<std::string, z3::expr> postcondition
+        ExecutionContext applyTo(ExecutionContext)
+    }
+
+    abstract class AbstractSummariser {
+        + Summary summarise(ExecutionContext entry,
+            ExecutionContext exit)
+        + {abstract} bool isEntry()
+        + {abstract} bool isExit()
+    }
+    class FunctionBlockSummariser extends AbstractSummariser {}
+
+    class InstructionEvaluator
+    class InstructionEncoder
+
+    class ExpressionEvaluator
+    class ExpressionEncoder
+}
+@enduml

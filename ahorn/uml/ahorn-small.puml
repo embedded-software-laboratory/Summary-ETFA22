@@ -1,0 +1,74 @@
+@startuml
+package "dse" {
+    abstract class Executor {
+        + ExecutionResult run(Cfg)
+        # std::vector<ExecutionContext> setupInitialStateset()
+        # void handleCycleEnd(ExecutionContext)
+        # void handleReturnCall(ExecutionContext)
+        # void applyVertexToContext(ExecutionContext)
+        {abstract} # void executeInstruction(ExecutionContext, Instruction)
+        # std::pair<InitialValuesType, CurrentValuesType> generateConcreteValuation()
+
+    }
+
+    class ConcolicExecutor extends Executor {
+        # void executeInstruction(ExecutionContext, Instruction)
+    }
+
+    class CCExecutor extends ConcolicExecutor {
+        # void applyVertexToContext(ExecutionContext)
+    }
+
+    class ShadowSymbolicExecutor extends CCExecutor {
+        # std::vector<ExecutionContext> setupInitialStateset()
+    }
+
+    abstract class ExplorationStrategy {
+       {abstract} + shouldTerminate() : bool
+       {abstract} + add(ExecutionContext)
+       {abstract} + front() : ExecutionContext
+       {abstract} + void popFront() : ExecutionContext
+    }
+
+    class TestCaseCollector {
+        void add(TestCase)
+        std::vector<TestCase> getAll()
+    }
+
+    class TestCase {
+        + InitialValuesType initial
+        + CurrentValuesType output
+        + bool isError
+    }
+
+    class ExecutionContext {
+        - z3.expr _pathConditions
+        - InitialValuesType _initialConcreteValues
+        - CurrentValuesType _currentConcreteValues
+
+        + void add(z3::expr)
+    }
+
+    ExecutionContext .u. Executor
+    ExplorationStrategy <-r- Executor
+    Executor --> TestCaseCollector
+
+    CCExecutor --> AbstractSummariser
+    CCExecutor "1" *-- "0..*" Summary
+    TestCaseCollector "1" *-- "0..*" TestCase
+
+    class Summary {
+        - z3::expr precondition
+        - std::map<std::string, z3::expr> postcondition
+        ExecutionContext applyTo(ExecutionContext)
+    }
+
+    abstract class AbstractSummariser {
+        + Summary summarise(ExecutionContext entry,
+            ExecutionContext exit)
+        + {abstract} bool isEntry()
+        + {abstract} bool isExit()
+    }
+
+}
+@enduml

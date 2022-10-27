@@ -1,0 +1,127 @@
+@startuml
+package "se" {
+    class Engine {
+        - _solver : std::unique_ptr<Solver>
+        - _explorer : std::unique_ptr<Explorer>
+        - _executor : std::unique_ptr<Executor>
+        - _merger : std::unique_ptr<Merger>
+        --
+        + run(const Cfg &) : void
+        --
+        - isTerminationCriteriaMet() : bool
+    }
+
+    class Merger {
+
+    }
+
+    class Manager {
+
+    }
+
+    class Context {
+        - _cycle : int
+        - _state : std::unique_ptr<State>
+        - _frame_stack : std::deque<std::shared_ptr<Frame>>
+        - _name_to_version : std::map<std::string, int>
+        -- Constructor --
+        + Context(int cycle, std::unique_ptr<State> state)
+        --
+        + initialize(const Cfg &cfg, Solver &solver) : void
+        + getCycle() : int
+    }
+
+    class Frame {
+        - _name : std::string
+        - _cfg : const Cfg &
+        - _return_label : int
+    }
+
+    class State {
+        - _label : int
+        - _concrete_store : std::map<std::string, z3::expr>
+        - _symbolic_store : std::map<std::string, z3::expr>
+        - _path_constraint : std::vector<z3::expr>
+        --
+        + getLabel() : int
+    }
+
+    class Explorer {
+        - _contexts : std::priority_queue<std::unique_ptr<Context>, std::deque<std::unique_ptr<Context>, ExplorationStrategy>
+    }
+
+    class Heuristic {
+        + operator()(const Context &c1, const Context &c2) : bool
+    }
+
+    class Executor {
+        - _solver : Solver &
+        - _encoder : std::unique_ptr<Encoder>
+        - _evaluator : std::unique_ptr<Evaluator>
+        - _summarizer : std::unique_ptr<Summarizer>
+        -- Constructor --
+        + Executor(Solver &solver)
+    }
+
+    class Solver {
+        - makeSort(const DataType &) : z3::sort
+        - makeConstant(const std::string &, const DataType &) : z3::expr
+    }
+
+    ' Symbolic
+    class Encoder {
+        - _solver : Solver &
+    }
+
+    ' Concrete
+    class Evaluator {
+        - _solver : Solver &
+    }
+
+    class Summarizer {
+        - _name_to_summaries : std::map<std::string, std::vector<std::unique_ptr<Summary>>>
+    }
+
+    class Summary {
+    }
+
+    class TestSuite {
+
+    }
+
+    class TestCase {
+
+    }
+
+    class Constraint {
+        - _id : int
+        - _kind : {ASSUMPTION, HARD_CONSTRAINT}
+    }
+
+    ' Dependencies
+    Engine "1" *-- "1" Explorer
+    Engine "1" *-- "1" Executor
+    Engine "1" *-- "1" Solver
+    Engine "1" *-- "1" Merger
+    Engine "1" *-- "1" TestSuite
+
+    Context -- State
+    Context -- Frame
+    Context -- Solver : uses >
+
+    Explorer -- Heuristic
+    Explorer -- Context
+
+    Executor -- Solver : uses >
+    Executor -- Encoder
+    Executor -- Evaluator
+    Executor "1" *-- "1" Summarizer
+
+    Summarizer *-- "0..*" Summary
+
+    TestSuite *-- "0..*" TestCase
+
+    Encoder -- Solver : uses >
+    Executor -- Solver : uses >
+}
+@enduml

@@ -1,0 +1,24 @@
+@startuml
+package "cfg" {
+        class Cfg {
+            + getVertex() : Vertex
+        }
+
+        enum VertexType {
+            ENTRY
+            EXIT
+            REGULAR
+        }
+
+        class Vertex {
+            + getInstruction() : Instruction*
+            + getLabel() : int
+            + getType() : VertexType
+        }
+
+        Vertex "1" *-- "1" VertexType
+
+        Cfg "1" *-- "1..*" Cfg
+        Cfg "1" *-- "1..*" Vertex
+}
+@enduml

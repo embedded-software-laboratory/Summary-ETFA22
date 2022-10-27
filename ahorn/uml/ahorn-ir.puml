@@ -1,0 +1,27 @@
+@startuml
+package "ir" {
+    abstract class InstructionVisitor {
+        void visit(Instruction)
+    }
+    abstract class ExpressionVisitor {
+        void visit(Expression)
+    }
+
+    abstract class Instruction {
+        void accept(InstructionVisitor)
+    }
+
+    abstract class Expression {
+        void accept(ExpressionVisitor)
+    }
+
+    ExpressionVisitor <|--u dse.ExpressionEvaluator
+    ExpressionVisitor <|--u dse.ExpressionEncoder
+
+    InstructionVisitor <|--u dse.InstructionEvaluator
+    InstructionVisitor <|--u dse.InstructionEncoder
+
+    ExpressionVisitor --> Expression
+    InstructionVisitor --> Instruction
+}
+@enduml
